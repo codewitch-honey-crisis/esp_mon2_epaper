@@ -21,6 +21,9 @@ static int old_gpu_temp=-1;
 
 // signal timer for disconnection detection
 static uint32_t timeout_ts = 0;
+
+static uint32_t update_ts = 0;
+
 static void uix_wait(void* state) {
     draw::wait_all_async(epd);
 }
@@ -50,7 +53,7 @@ void loop() {
     }
 
     bool dirty = main_screen.is_dirty();
-    if(dirty) {
+    if(dirty && millis()>update_ts+5000) {
         // update the UI
         epd.invalidate();
         draw::suspend(epd);
