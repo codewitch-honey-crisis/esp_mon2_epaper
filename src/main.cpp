@@ -54,6 +54,7 @@ void loop() {
 
     bool dirty = main_screen.is_dirty();
     if(dirty && millis()>update_ts+5000) {
+        update_ts = millis();
         // update the UI
         epd.invalidate();
         draw::suspend(epd);
