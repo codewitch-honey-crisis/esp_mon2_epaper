@@ -21,15 +21,14 @@ static int old_gpu_temp=-1;
 
 // signal timer for disconnection detection
 static uint32_t timeout_ts = 0;
-
-static uint32_t update_ts = 0;
-
+static void uix_wait(void* state) {
+    draw::wait_all_async(epd);
+}
 static void uix_flush(const rect16& bounds, 
                     const void* bmp, 
                     void* state) {
     const_bitmap<screen_t::pixel_type,screen_t::palette_type> cbmp(size16(bounds.width(),bounds.height()),bmp);
-    draw::bitmap(epd,bounds,cbmp,cbmp.bounds());
-    main_screen.set_flush_complete();
+    draw::bitmap_async(epd,bounds,cbmp,cbmp.bounds());
 }
 
 void setup() {
@@ -37,8 +36,9 @@ void setup() {
     epd.initialize();
     epd.rotation(1);
     // initialize the main screen (ui.cpp)
+    main_screen.wait_flush_callback(uix_wait);
     main_screen_init(uix_flush);
-
+    main_screen.invalidate(main_screen.bounds());
 }
 
 void loop() {
@@ -48,16 +48,15 @@ void loop() {
         disconnected_label.visible(true);
         disconnected_svg.visible(true);
     }
-    if(millis()>update_ts+5000) {
-        update_ts = millis();
-        main_screen.invalidate(main_screen.bounds());
+
+    bool dirty = main_screen.is_dirty();
+    if(dirty) {
         // update the UI
         epd.invalidate();
         draw::suspend(epd);
         main_screen.update();
         draw::resume(epd);
     }
-    
     // listen for incoming serial
     int i = Serial.read();
     float tmp;
